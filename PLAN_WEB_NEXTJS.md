@@ -10,6 +10,11 @@
 > Desde Windows, la app de escritorio debe usar **`admin_skincare`** (nunca `root`):
 > `jdbc:mariadb://192.168.1.157:3306/seoulglow_db`. Detalles en `CONTEXTO_UBUNTU.md` §4.4.
 
+> **Implementación actual:** el código de la web vive en `web/` del repositorio (no en
+> `/var/www`), corre como servicio `seoulglow.service` con el usuario `andreleon` y Apache
+> lo publica en `http://192.168.1.157/`. Este plan sigue siendo la referencia de diseño;
+> los comandos concretos de operación están en `CONTEXTO_UBUNTU.md` §8.1.
+
 ---
 
 ## 1. Aclaración clave: quién habla con quién

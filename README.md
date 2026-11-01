@@ -8,7 +8,7 @@ una misma base MariaDB:
 | Componente | Dónde corre | Estado |
 |---|---|---|
 | Base de datos `seoulglow_db` | Ubuntu 26 | cargada y verificada |
-| Página web (Next.js + Apache) | Ubuntu 26 | pendiente |
+| Página web (Next.js + Apache) | Ubuntu 26 | básica publicada |
 | App de escritorio (NetBeans + JDBC) | Windows | pendiente |
 
 ## Documentación
@@ -46,6 +46,28 @@ La base ya está cargada. Desde Windows **no** se ejecutan los scripts: solo se 
 | Driver | `org.mariadb.jdbc.Driver` (`mariadb-java-client`) |
 
 Detalles y notas para el agente de la app `.exe`: ver **§4.4** en [`CONTEXTO_UBUNTU.md`](CONTEXTO_UBUNTU.md).
+
+## Web (Next.js + Apache)
+
+Publicada en **`http://192.168.1.157/`** (Apache → `127.0.0.1:3000`).
+
+| Ruta | Contenido |
+|---|---|
+| `/` | Home: destacados, marcas y categorías |
+| `/productos` | Catálogo con filtros por categoría, tipo de piel, marca y búsqueda |
+| `/productos/<slug>` | Ficha del producto e ingredientes clave |
+
+```bash
+cd web
+npm install          # primera vez
+npm run dev          # desarrollo en http://localhost:3000
+npm run build        # producción
+systemctl status seoulglow
+journalctl -u seoulglow -f
+```
+
+Detalles de despliegue en [`CONTEXTO_UBUNTU.md` §8.1](CONTEXTO_UBUNTU.md) y
+[`PLAN_WEB_NEXTJS.md`](PLAN_WEB_NEXTJS.md).
 
 ## Modelo en una imagen
 

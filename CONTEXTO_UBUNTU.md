@@ -17,7 +17,7 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
 | MariaDB | Ubuntu | ✅ instalado |
 | Base de datos `seoulglow_db` | Ubuntu | ✅ cargada y verificada (01→06 ejecutados) |
 | Servidor web Apache | Ubuntu | ✅ instalado |
-| Página web **Next.js** + Apache como proxy | Ubuntu | ⬜ pendiente |
+| Página web **Next.js** + Apache como proxy | Ubuntu | ✅ básica publicada en `http://192.168.1.157/` |
 | App de escritorio **Apache NetBeans** (Java + JDBC) | Windows | ⬜ pendiente |
 | DBeaver | Windows | ✅ conexión creada |
 
@@ -300,14 +300,46 @@ La base **ya está cargada en el MariaDB 11.8.6 de la VM** (Ubuntu 26) y validad
 1. ~~Verificar MariaDB ≥ 10.6~~ → ✅ MariaDB 11.8.6.
 2. ~~Ejecutar los scripts en orden~~ → ✅ 01→06 ejecutados y verificados.
 3. ~~Correr las consultas de verificación~~ → ✅ kardex y totales cuadran, `v_stock_bajo` devuelve 4.
-4. Crear el proyecto Next.js según `PLAN_WEB_NEXTJS.md`:
+4. ~~Crear el proyecto Next.js~~ → ✅ en `web/`:
    - `lib/db.ts` con pool `mysql2` usando `web_skincare@localhost`.
    - Home, catálogo (`searchParams`), ficha `[slug]` con `generateMetadata`.
    - Filtros por categoría, marca y `tipo_piel`.
-5. Apache como reverse proxy a `127.0.0.1:3000` (`mod_proxy_http`, `ProxyPreserveHost`).
-6. Servicio `systemd` para que sobreviva reinicios.
-7. Probar desde Windows: `http://<IP_VM>/`.
+5. ~~Apache como reverse proxy~~ → ✅ `seoulglow.conf` con `mod_proxy_http` y `ProxyPreserveHost`.
+6. ~~Servicio `systemd`~~ → ✅ `seoulglow.service` habilitado y activo.
+7. ~~Probar desde Windows~~ → ✅ responde en `http://192.168.1.157/` (ver §8.1).
 8. No commitear `.env.local` ni credenciales nuevas.
+
+### 8.1 Web ya publicada (1/11/2026)
+
+| Dato | Valor |
+|---|---|
+| URL | `http://192.168.1.157/` |
+| Código | `web/` (Next.js 16 + Tailwind 4 + `mysql2`) |
+| Servicio | `seoulglow.service` (systemd, usuario `andreleon`) |
+| Proxy | `/etc/apache2/sites-available/seoulglow.conf` → `127.0.0.1:3000` |
+| Usuario BD | `web_skincare@localhost` (solo `SELECT`) |
+| Sitio por defecto | `000-default` deshabilitado; la home es la tienda |
+
+Rutas implementadas:
+
+| Ruta | Qué muestra |
+|---|---|
+| `/` | Hero, marcas, 4 destacados y categorías con conteo |
+| `/productos` | Catálogo completo con filtros `?cat=&piel=&marca=&q=` |
+| `/productos/[slug]` | Ficha: precio, stock, tipo de piel e ingredientes clave |
+
+Comandos útiles:
+
+```bash
+systemctl status seoulglow
+journalctl -u seoulglow -f
+cd ~/Documentos/seoulglow/web && npm run build && sudo systemctl restart seoulglow
+```
+
+**Imágenes:** `producto_imagenes.url` apunta a `/img/productos/<SKU>-1.webp`.
+Mientras no existan, cada tarjeta muestra un panel tipográfico con el color de su
+categoría. Al copiar las fotos a `web/public/img/productos/` aparecen solas
+(reconstruir o esperar el `revalidate`).
 
 ---
 
