@@ -7,7 +7,7 @@ una misma base MariaDB:
 
 | Componente | Dónde corre | Estado |
 |---|---|---|
-| Base de datos `seoulglow_db` | Ubuntu 26 | scripts listos |
+| Base de datos `seoulglow_db` | Ubuntu 26 | cargada y verificada |
 | Página web (Next.js + Apache) | Ubuntu 26 | pendiente |
 | App de escritorio (NetBeans + JDBC) | Windows | pendiente |
 
@@ -33,6 +33,19 @@ sudo mariadb < sql/06_verify.sql   # opcional
 
 Requiere **MariaDB 10.6+** (se usa `JSON_TABLE`) y ejecutarse **en la VM**:
 `05_users.sql` necesita `GRANT OPTION`, que el `root` remoto normalmente no tiene.
+
+## Conexión desde Windows (app de escritorio / NetBeans)
+
+La base ya está cargada. Desde Windows **no** se ejecutan los scripts: solo se conecta la app.
+
+| Dato | Valor |
+|---|---|
+| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
+| Usuario | **`admin_skincare`** (nunca `root`) |
+| Contraseña | `AdminSkincare2026!` |
+| Driver | `org.mariadb.jdbc.Driver` (`mariadb-java-client`) |
+
+Detalles y notas para el agente de la app `.exe`: ver **§4.4** en [`CONTEXTO_UBUNTU.md`](CONTEXTO_UBUNTU.md).
 
 ## Modelo en una imagen
 

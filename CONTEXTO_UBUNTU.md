@@ -15,7 +15,7 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
 |---|---|---|
 | Ubuntu 26 (VM) | VirtualBox / VMware | ✅ instalado |
 | MariaDB | Ubuntu | ✅ instalado |
-| Base de datos `seoulglow_db` | Ubuntu | ✅ scripts listos, **pendientes de ejecutar** |
+| Base de datos `seoulglow_db` | Ubuntu | ✅ cargada y verificada (01→06 ejecutados) |
 | Servidor web Apache | Ubuntu | ✅ instalado |
 | Página web **Next.js** + Apache como proxy | Ubuntu | ⬜ pendiente |
 | App de escritorio **Apache NetBeans** (Java + JDBC) | Windows | ⬜ pendiente |
@@ -151,19 +151,57 @@ return MessageDigest.isEqual(esperado, calc);
 | Usuario | Host | Contraseña | Permisos |
 |---|---|---|---|
 | `web_skincare` | `localhost` | `WebSkincare2026!` | `SELECT` sobre `v_catalogo_web`, `producto_imagenes`, `producto_ingredientes`, `ingredientes` |
-| `admin_skincare` | `192.168.1.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
+| **`admin_skincare`** | `192.168.1.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
 | `backup_skincare` | `localhost` | `BackupSkincare2026!` | lectura + `LOCK TABLES` para `mysqldump` |
 
 **Importante:** `web_skincare` es `@'localhost'` porque **Next.js corre en la misma VM**.
 Si la IP del cliente Windows no está en `192.168.1.0/24`, ajustar `05_users.sql` **antes** de ejecutarlo.
+
+> **Desde Windows se usa SIEMPRE `admin_skincare`, nunca `root`.** Es el único usuario
+> habilitado para conexiones remotas y el único con permiso de escritura. Ver §4.4.
 
 ### 4.3 Cadenas de conexión
 
 | Cliente | Cadena |
 |---|---|
 | Next.js (`mysql2`) | `{ host: '127.0.0.1', port: 3306, database: 'seoulglow_db', user: 'web_skincare' }` |
-| JDBC (NetBeans) | `jdbc:mariadb://<IP_VM>:3306/seoulglow_db` con `admin_skincare` |
+| JDBC (NetBeans) | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` con `admin_skincare` |
 | DBeaver | misma URL JDBC |
+
+### 4.4 Acceso desde Windows (agente de la app `.exe` / NetBeans)
+
+Datos exactos para conectarse desde la máquina Windows (probado el 1/11/2026 desde
+`192.168.1.71` contra la VM `192.168.1.157`):
+
+| Dato | Valor |
+|---|---|
+| Host / IP de la VM | `192.168.1.157` |
+| Puerto | `3306` |
+| Base de datos | `seoulglow_db` |
+| Usuario | **`admin_skincare`** (no `root`, no `web_skincare`) |
+| Contraseña | `AdminSkincare2026!` |
+| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
+| Driver | `org.mariadb.jdbc.Driver` (`mariadb-java-client`) |
+
+Prueba rápida antes de escribir código Java:
+
+```bash
+# Desde Windows (PowerShell), si hay cliente MariaDB/MySQL instalado:
+mariadb -h 192.168.1.157 -P 3306 -u admin_skincare -p seoulglow_db -e "SELECT COUNT(*) FROM productos;"
+# Debe devolver 32
+```
+
+Notas para ese agente:
+
+- **La base ya está cargada y verificada**: no ejecutar `01`–`06` desde Windows.
+- `admin_skincare` solo puede entrar desde `192.168.1.%`; si la IP de Windows cambia de red,
+  hay que ajustar el host del usuario en la VM (`05_users.sql`).
+- El firewall de la VM tiene el **3306 abierto a cualquier origen** (`ufw allow 3306/tcp`,
+  decisión del 1/11/2026 para la demo académica). No hay que tocar `ufw` desde Windows.
+- No crear usuarios nuevos ni otorgar permisos desde la app: los usuarios de MariaDB se
+  administran solo en la VM.
+- `subtotal_linea` en `pedido_detalles` es columna generada: no se inserta ni se actualiza.
+- Para anular un pedido usar `CALL sp_cancelar_pedido(id, id_usuario)`, no `DELETE`.
 
 ---
 
@@ -199,19 +237,20 @@ Abrir cada archivo y usar **Execute SQL Script** (`Alt+X`), en el mismo orden.
 
 ## 6. Validación realizada
 
-La base **no se pudo ejecutar contra un servidor MariaDB real** en la máquina de origen
-(Windows sin Docker ni MariaDB). Se hicieron validaciones estáticas con scripts sobre `02_seed.sql`:
+La base **ya está cargada en el MariaDB 11.8.6 de la VM** (Ubuntu 26) y validada con
+`06_verify.sql`. Resultado del 1 de noviembre de 2026:
 
 | Verificación | Resultado |
 |---|---|
-| Aridad de los 9 `INSERT` (columnas vs valores) | ✅ correcta |
-| IDs explícitos: secuenciales y sin duplicados | ✅ 1..N en todas las tablas |
-| Claves foráneas apuntan a filas existentes | ✅ 0 referencias inválidas |
-| Claves únicas (SKU, slug, `(pedido, producto)`, `(producto, ingrediente)`) | ✅ sin duplicados |
-| Stock final nunca negativo | ✅ |
-| Kardex cuadra con el stock (`entrada - salida`) | ✅ por construcción |
-| Paréntesis y comillas balanceados en los 5 scripts | ✅ |
-| Totales de pedidos = suma de líneas − descuento + impuesto | ✅ (se calculan por `UPDATE` en el seed) |
+| Conteo de filas (11 tablas) | ✅ coincide con la tabla de §3.2 |
+| Vistas creadas | ✅ `v_catalogo_web`, `v_stock_bajo`, `v_ventas_mensuales` |
+| Rutinas creadas | ✅ 4 procedimientos + 2 triggers |
+| Kardex vs stock (`descuadres_kardex`) | ✅ 0 |
+| Totales de pedidos (`descuadres_totales`) | ✅ 0 |
+| Usuarios de MariaDB | ✅ `web_skincare`, `admin_skincare`, `backup_skincare` |
+| Conexión `web_skincare@localhost` | ✅ lee `v_catalogo_web` (32 filas) |
+| Conexión `admin_skincare@192.168.1.%` | ✅ CRUD sobre `seoulglow_db` |
+| `v_stock_bajo` | ✅ 4 productos (Miracle Starter Kit, Centella Calming Sheet Mask, All Day Mask Pack, Lip Sleeping Mask) |
 
 ### 6.1 Resultados esperados tras el seed
 
@@ -223,12 +262,18 @@ La base **no se pudo ejecutar contra un servidor MariaDB real** en la máquina d
 - El pedido `PED-2026-000005` está **cancelado** y no descuenta stock.
 - 45 unidades vendidas en total.
 
-### 6.2 Corrección aplicada
+### 6.2 Correcciones aplicadas
 
-`sp_registrar_pedido` materializa los ítems en una **tabla temporal** antes de insertar
-`pedido_detalles`. Motivo: el `INSERT ... SELECT` original leía `productos` y el trigger
-`tr_detalle_after_insert` actualiza esa misma tabla → **MariaDB error 1442**
-(*Can't update table in stored function/trigger because it is already used by statement*).
+- `sp_registrar_pedido` materializa los ítems en una **tabla temporal** antes de insertar
+  `pedido_detalles`. Motivo: el `INSERT ... SELECT` original leía `productos` y el trigger
+  `tr_detalle_after_insert` actualiza esa misma tabla → **MariaDB error 1442**
+  (*Can't update table in stored function/trigger because it is already used by statement*).
+- `05_users.sql` comprueba `GRANT OPTION` **antes** de crear usuarios. Antes, al ejecutarlo
+  desde DBeaver como `root@'%'` (sin `GRANT OPTION`), abortaba en el primer `GRANT` y dejaba
+  `web_skincare` creado pero sin permisos y sin `admin_skincare`. Ya se corrigió ejecutándolo
+  en la VM con `sudo mariadb < sql/05_users.sql`; ambos usuarios quedaron con sus permisos.
+- `06_verify.sql`: el alias `AS real` es palabra reservada en MariaDB 11.8 (error 1064).
+  Se renombró a `AS obtenido`.
 
 ---
 
@@ -237,11 +282,11 @@ La base **no se pudo ejecutar contra un servidor MariaDB real** en la máquina d
 | Tema | Detalle |
 |---|---|
 | **Error 1442** | No insertar detalles con `INSERT ... SELECT` sobre `productos`; usar `VALUES` o `sp_registrar_pedido` |
-| **Error 1142** (`GRANT command denied`) | El `root` remoto (DBeaver) no tiene `GRANT OPTION`; no es un fallo del script | Ejecutar `05_users.sql` en la VM con `sudo mariadb < sql/05_users.sql` |
+| **Error 1142** (`GRANT command denied`) | El `root` remoto (DBeaver, `root@'%'`) no tiene `GRANT OPTION`; no es un fallo del script. Desde el 1/11/2026 `05_users.sql` lo detecta y aborta antes de crear nada. Solución: `sudo mariadb < sql/05_users.sql` en la VM |
 | **DELIMITER** | `04_routines.sql` debe ejecutarse como script completo |
 | **Host de `web_skincare`** | Es `@'localhost'`; no crear `@'%'` "para que funcione" |
 | **`bind-address`** | Solo necesario para NetBeans/DBeaver desde Windows |
-| **Puerto 3306** | `ufw allow from 192.168.1.0/24 to any port 3306`, no abierto a Internet |
+| **Puerto 3306** | **Abierto a cualquier origen** por decisión del 1/11/2026 (demo académica): `ufw allow 3306/tcp`. El acceso lo controla MariaDB con `admin_skincare@'192.168.1.%'`. En un entorno real, restringir a la LAN (`ufw allow from 192.168.1.0/24 to any port 3306`) |
 | **Imágenes** | `producto_imagenes.url` apunta a `/img/productos/<SKU>-1.webp`; hay que copiar las fotos a `public/img/productos/` en Next.js |
 | **Caché ISR** | Si el stock cambia desde NetBeans, la web puede tardar hasta `revalidate` segundos |
 | **Zona horaria** | Guardar en UTC; mostrar en la app |
@@ -252,9 +297,9 @@ La base **no se pudo ejecutar contra un servidor MariaDB real** en la máquina d
 
 ## 8. Próximos pasos (para el agente en Ubuntu)
 
-1. Verificar MariaDB ≥ 10.6: `mariadb --version`.
-2. Ejecutar los 5 scripts en orden.
-3. Correr las consultas de verificación de `sql/README.md` (kardex, totales, `v_stock_bajo`).
+1. ~~Verificar MariaDB ≥ 10.6~~ → ✅ MariaDB 11.8.6.
+2. ~~Ejecutar los scripts en orden~~ → ✅ 01→06 ejecutados y verificados.
+3. ~~Correr las consultas de verificación~~ → ✅ kardex y totales cuadran, `v_stock_bajo` devuelve 4.
 4. Crear el proyecto Next.js según `PLAN_WEB_NEXTJS.md`:
    - `lib/db.ts` con pool `mysql2` usando `web_skincare@localhost`.
    - Home, catálogo (`searchParams`), ficha `[slug]` con `generateMetadata`.

@@ -366,10 +366,12 @@ FLUSH PRIVILEGES;
    bind-address = 0.0.0.0
    # opcional: port = 3306
    ```
-3. **Firewall** — solo la red del laboratorio:
+3. **Firewall** — decisión del 1/11/2026: **abierto a cualquier origen** para la demo académica:
    ```bash
-   sudo ufw allow from 192.168.1.0/24 to any port 3306 proto tcp
+   sudo ufw allow 3306/tcp
    ```
+   El control de acceso real lo hace MariaDB con `admin_skincare@'192.168.1.%'`.
+   En un entorno real: `sudo ufw allow from 192.168.1.0/24 to any port 3306 proto tcp`.
 4. **Reiniciar y verificar:**
    ```bash
    sudo systemctl restart mariadb
@@ -377,22 +379,22 @@ FLUSH PRIVILEGES;
    ```
 5. **Prueba desde Windows (PowerShell):**
    ```powershell
-   Test-NetConnection 192.168.1.10 -Port 3306
+   Test-NetConnection 192.168.1.157 -Port 3306
    ```
-6. **DBeaver:** conexión ya creada → solo cambiar usuario a `admin_skincare` y marcar *"Allow public key retrieval"* si aparece el error de autenticación.
+6. **DBeaver:** conexión ya creada → usuario **`admin_skincare`** (nunca `root`) y marcar *"Allow public key retrieval"* si aparece el error de autenticación.
 
 ### Configuración de conexión (para NetBeans / DBeaver / Next.js)
 
 | Parámetro | Valor |
 |---|---|
-| Host (desde Windows) | IP de la VM Ubuntu (ej. `192.168.1.10`) |
+| Host (desde Windows) | `192.168.1.157` (IP de la VM) |
 | Host (desde la web en la VM) | `127.0.0.1` |
 | Puerto | `3306` |
 | Base de datos | `seoulglow_db` |
-| Usuario app | `admin_skincare` |
+| Usuario app (Windows) | **`admin_skincare`** — el único permitido desde Windows; **nunca `root`** |
 | Usuario web | `web_skincare` |
 | Driver Java | MariaDB Connector/J (`org.mariadb.jdbc.Driver`) |
-| URL JDBC | `jdbc:mariadb://192.168.1.10:3306/seoulglow_db` |
+| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
 | Next.js (`mysql2`) | `{ host: '127.0.0.1', database: 'seoulglow_db', user: 'web_skincare' }` |
 
 > Guardar credenciales fuera del código: `.env.local` con permisos `600` en Ubuntu y un `db.properties` en el proyecto Java.

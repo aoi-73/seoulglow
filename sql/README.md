@@ -20,13 +20,13 @@ En DBeaver: abrir cada archivo y usar **Execute SQL Script** (`Alt+X`). No ejecu
 | 5 | `05_users.sql` | Crea `web_skincare`, `admin_skincare`, `backup_skincare` y sus permisos |
 | 6 | `06_verify.sql` | (Opcional) Conteos, objetos creados y comprobaciones de integridad |
 
-> **`05_users.sql` necesita `GRANT OPTION`.** El `root` remoto (el que se conecta desde DBeaver) normalmente **no** la tiene. Si ves `SQL Error [1142] GRANT command denied`, ejecutá ese script en la VM:
+> **`05_users.sql` necesita `GRANT OPTION`.** El `root` remoto (el que se conecta desde DBeaver) normalmente **no** la tiene. El script comprueba ese permiso antes de crear nada y, si falta, aborta con `Falta GRANT OPTION: ejecuta en la VM -> sudo mariadb < sql/05_users.sql` (antes se cortaba en el primer `GRANT` y dejaba usuarios sin permisos). Solución:
 >
 > ```bash
 > sudo mariadb < sql/05_users.sql
 > ```
 >
-> No le des más permisos al root remoto: el diseño es que la administración de usuarios se haga desde la propia máquina.
+> No le des más permisos al root remoto: el diseño es que la administración de usuarios se haga desde la propia máquina. El script es idempotente: si se interrumpió, volver a ejecutarlo lo completa.
 
 > `01_schema.sql` es idempotente: si lo volvés a ejecutar, **borra** las tablas y vistas de `seoulglow_db`. No borra los usuarios.
 
@@ -136,9 +136,9 @@ public static boolean verificar(String password, String almacenado) throws Excep
 
 ## Notas de conexión
 
-- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.1.10:3306/seoulglow_db` con `admin_skincare`.
+- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` con **`admin_skincare`** (nunca `root`).
 - Desde Next.js en la VM: `127.0.0.1:3306` con `web_skincare`.
-- Requiere en Ubuntu: `bind-address = 0.0.0.0` y `ufw allow from 192.168.1.0/24 to any port 3306` (solo por la app de escritorio).
+- Requiere en Ubuntu: `bind-address = 0.0.0.0` y el puerto 3306 abierto. Desde el 1/11/2026 está **abierto a cualquier origen** (`sudo ufw allow 3306/tcp`) por decisión de la demo; el acceso lo limita `admin_skincare@'192.168.1.%'`.
 
 ## Reglas que la base ya hace cumplir
 
@@ -156,4 +156,6 @@ public static boolean verificar(String password, String almacenado) throws Excep
 | `FUNCTION JSON_TABLE does not exist` | MariaDB < 10.6 | Actualizar MariaDB |
 | `Cannot add or update a child row` en el seed | Se ejecutó el seed sin el esquema | Ejecutar `01` antes que `02` |
 | `Access denied for user 'web_skincare'@'localhost'` | Usuario creado con otro host | Revisar `SELECT user, host FROM mysql.user` |
+| `Falta GRANT OPTION` al ejecutar `05_users.sql` | Se corrió desde DBeaver con `root@'%'` | `sudo mariadb < sql/05_users.sql` en la VM |
+| `You have an error in your SQL syntax ... near 'real'` | `real` es palabra reservada en MariaDB 11.x | Usar la versión actual de `06_verify.sql` (alias `obtenido`) |
 | `Duplicate entry 'PED-2026-...'` | Se ejecutó el seed dos veces | Volver a correr `01_schema.sql` y luego `02` |

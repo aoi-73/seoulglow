@@ -5,6 +5,11 @@
 > **Base de datos:** MariaDB `seoulglow_db` (ver `PLAN_BASE_DATOS.md`).
 > **Complemento:** aplicación de escritorio en Apache NetBeans (Windows) que administra la misma base por JDBC.
 
+> **Estado (1/11/2026):** la base `seoulglow_db` **ya está cargada y verificada** en la VM
+> (MariaDB 11.8.6). La web solo necesita conectarse con `web_skincare@localhost`.
+> Desde Windows, la app de escritorio debe usar **`admin_skincare`** (nunca `root`):
+> `jdbc:mariadb://192.168.1.157:3306/seoulglow_db`. Detalles en `CONTEXTO_UBUNTU.md` §4.4.
+
 ---
 
 ## 1. Aclaración clave: quién habla con quién
@@ -209,7 +214,7 @@ DB_PORT=3306
 DB_NAME=seoulglow_db
 DB_USER=web_skincare
 DB_PASSWORD=WebSkincare2026!
-NEXT_PUBLIC_SITE_URL=http://192.168.1.10
+NEXT_PUBLIC_SITE_URL=http://192.168.1.157
 ```
 
 `.env.example` (sí se sube):
@@ -305,7 +310,7 @@ sudo systemctl restart apache2
 ```apache
 <VirtualHost *:80>
     ServerName seoulglow.local
-    ServerAlias 192.168.1.10
+    ServerAlias 192.168.1.157
 
     ProxyPreserveHost On
     ProxyRequests Off
@@ -512,9 +517,9 @@ FLUSH PRIVILEGES;
 
 ### 8.2 Lo que sigue igual
 
-- `admin_skincare`@`192.168.1.%` → DBeaver y NetBeans desde Windows (CRUD).
+- `admin_skincare`@`192.168.1.%` → **el usuario obligatorio** para DBeaver y NetBeans desde Windows (CRUD); nunca `root`.
 - `bind-address = 0.0.0.0` → sigue siendo necesario **solo** por la app de escritorio.
-- `ufw allow from 192.168.1.0/24 to any port 3306` → solo para Windows.
+- `ufw allow 3306/tcp` → abierto a cualquier origen por decisión del 1/11/2026 (demo); el acceso lo limita el host del usuario de MariaDB.
 
 ### 8.3 Ajuste recomendado en la vista
 
@@ -544,7 +549,7 @@ WHERE p.activo = 1 AND m.activa = 1 AND c.activa = 1;
 | Escenario | Cómo | Ventaja / riesgo |
 |---|---|---|
 | **A. Desarrollar en Ubuntu** (recomendado) | VS Code con *Remote SSH* o editar por SSH | Mismo entorno que producción; sin sorpresas de rutas ni mayúsculas |
-| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.1.10`, usuario `admin_skincare` o un `web_dev@192.168.1.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
+| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.1.157`, usuario `admin_skincare` o un `web_dev@192.168.1.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
 | C. Solo copiar archivos | Editar en Windows y subir con `scp`/FileZilla | Funciona, pero se pierde el HMR |
 
 > **Ojo con Linux:** las rutas distinguen mayúsculas. `ProductoCard.tsx` importado como `productocard` funciona en Windows y falla en Ubuntu. Es el error clásico del día anterior a la entrega.
@@ -568,11 +573,11 @@ sudo systemctl is-enabled seoulglow && sudo systemctl restart seoulglow
 sleep 3 && curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
 
 # 4. ¿Apache hace el proxy?
-curl -I http://192.168.1.10/
+curl -I http://192.168.1.157/
 sudo tail -f /var/log/apache2/seoulglow_error.log
 
 # 5. ¿Responde desde Windows?
-# PowerShell: Invoke-WebRequest http://192.168.1.10/ -UseBasicParsing | Select StatusCode
+# PowerShell: Invoke-WebRequest http://192.168.1.157/ -UseBasicParsing | Select StatusCode
 ```
 
 ### 10.2 Definition of Done (punto 4 del caso)

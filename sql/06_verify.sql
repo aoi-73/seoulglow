@@ -9,7 +9,7 @@ USE seoulglow_db;
 -- ---------------------------------------------------------------------------
 -- 1) Conteo de filas
 -- ---------------------------------------------------------------------------
-SELECT 'categorias'           AS tabla, 12 AS esperado, COUNT(*) AS real FROM categorias
+SELECT 'categorias'           AS tabla, 12 AS esperado, COUNT(*) AS obtenido FROM categorias
 UNION ALL SELECT 'marcas',              10, COUNT(*) FROM marcas
 UNION ALL SELECT 'ingredientes',        14, COUNT(*) FROM ingredientes
 UNION ALL SELECT 'productos',           32, COUNT(*) FROM productos
