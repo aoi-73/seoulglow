@@ -32,7 +32,7 @@ Con Next.js el reparto de responsabilidades cambia respecto a un stack PHP:
 
 1. **Apache no consulta la base.** Apache termina HTTP, sirve estáticos y reenvía todo a Node. Si Apache se cae, la web no responde aunque Node esté vivo (y viceversa).
 2. **Next.js corre en el servidor**, no en el navegador. Los *Server Components* se ejecutan en Node, así que pueden abrir conexiones a MariaDB sin exponer credenciales. Esto es lo que hace que Next.js sea seguro aquí.
-3. **La única conexión remota a MariaDB es la de Windows** (NetBeans/DBeaver). La web entra por `localhost`, por eso su usuario **no** necesita `@'192.168.56.%'`.
+3. **La única conexión remota a MariaDB es la de Windows** (NetBeans/DBeaver). La web entra por `localhost`, por eso su usuario **no** necesita `@'192.168.1.%'`.
 
 > Regla de oro: el código que corre en el navegador (`"use client"`) **nunca** importa el pool de conexiones. Solo los Server Components, Server Actions y Route Handlers tocan la base.
 
@@ -209,7 +209,7 @@ DB_PORT=3306
 DB_NAME=seoulglow_db
 DB_USER=web_skincare
 DB_PASSWORD=WebSkincare2026!
-NEXT_PUBLIC_SITE_URL=http://192.168.56.10
+NEXT_PUBLIC_SITE_URL=http://192.168.1.10
 ```
 
 `.env.example` (sí se sube):
@@ -305,7 +305,7 @@ sudo systemctl restart apache2
 ```apache
 <VirtualHost *:80>
     ServerName seoulglow.local
-    ServerAlias 192.168.56.10
+    ServerAlias 192.168.1.10
 
     ProxyPreserveHost On
     ProxyRequests Off
@@ -512,9 +512,9 @@ FLUSH PRIVILEGES;
 
 ### 8.2 Lo que sigue igual
 
-- `admin_skincare`@`192.168.56.%` → DBeaver y NetBeans desde Windows (CRUD).
+- `admin_skincare`@`192.168.1.%` → DBeaver y NetBeans desde Windows (CRUD).
 - `bind-address = 0.0.0.0` → sigue siendo necesario **solo** por la app de escritorio.
-- `ufw allow from 192.168.56.0/24 to any port 3306` → solo para Windows.
+- `ufw allow from 192.168.1.0/24 to any port 3306` → solo para Windows.
 
 ### 8.3 Ajuste recomendado en la vista
 
@@ -544,7 +544,7 @@ WHERE p.activo = 1 AND m.activa = 1 AND c.activa = 1;
 | Escenario | Cómo | Ventaja / riesgo |
 |---|---|---|
 | **A. Desarrollar en Ubuntu** (recomendado) | VS Code con *Remote SSH* o editar por SSH | Mismo entorno que producción; sin sorpresas de rutas ni mayúsculas |
-| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.56.10`, usuario `admin_skincare` o un `web_dev@192.168.56.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
+| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.1.10`, usuario `admin_skincare` o un `web_dev@192.168.1.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
 | C. Solo copiar archivos | Editar en Windows y subir con `scp`/FileZilla | Funciona, pero se pierde el HMR |
 
 > **Ojo con Linux:** las rutas distinguen mayúsculas. `ProductoCard.tsx` importado como `productocard` funciona en Windows y falla en Ubuntu. Es el error clásico del día anterior a la entrega.
@@ -568,11 +568,11 @@ sudo systemctl is-enabled seoulglow && sudo systemctl restart seoulglow
 sleep 3 && curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
 
 # 4. ¿Apache hace el proxy?
-curl -I http://192.168.56.10/
+curl -I http://192.168.1.10/
 sudo tail -f /var/log/apache2/seoulglow_error.log
 
 # 5. ¿Responde desde Windows?
-# PowerShell: Invoke-WebRequest http://192.168.56.10/ -UseBasicParsing | Select StatusCode
+# PowerShell: Invoke-WebRequest http://192.168.1.10/ -UseBasicParsing | Select StatusCode
 ```
 
 ### 10.2 Definition of Done (punto 4 del caso)

@@ -45,7 +45,8 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
     ├── 02_seed.sql         ← datos de ejemplo
     ├── 03_views.sql        ← vistas
     ├── 04_routines.sql     ← triggers + procedimientos
-    └── 05_users.sql        ← usuarios de MariaDB y GRANTs
+    ├── 05_users.sql        ← usuarios de MariaDB y GRANTs
+    └── 06_verify.sql       ← comprobaciones posteriores a la carga
 ```
 
 ---
@@ -150,11 +151,11 @@ return MessageDigest.isEqual(esperado, calc);
 | Usuario | Host | Contraseña | Permisos |
 |---|---|---|---|
 | `web_skincare` | `localhost` | `WebSkincare2026!` | `SELECT` sobre `v_catalogo_web`, `producto_imagenes`, `producto_ingredientes`, `ingredientes` |
-| `admin_skincare` | `192.168.56.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
+| `admin_skincare` | `192.168.1.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
 | `backup_skincare` | `localhost` | `BackupSkincare2026!` | lectura + `LOCK TABLES` para `mysqldump` |
 
 **Importante:** `web_skincare` es `@'localhost'` porque **Next.js corre en la misma VM**.
-Si el host de la VM no es `192.168.56.%`, ajustar `05_users.sql` **antes** de ejecutarlo.
+Si la IP del cliente Windows no está en `192.168.1.0/24`, ajustar `05_users.sql` **antes** de ejecutarlo.
 
 ### 4.3 Cadenas de conexión
 
@@ -172,14 +173,20 @@ Si el host de la VM no es `192.168.56.%`, ajustar `05_users.sql` **antes** de ej
 
 ```bash
 cd <ruta-del-repo>
-mysql -u root -p < sql/01_schema.sql
-mysql -u root -p < sql/02_seed.sql
-mysql -u root -p < sql/03_views.sql
-mysql -u root -p < sql/04_routines.sql
-mysql -u root -p < sql/05_users.sql
+sudo mariadb < sql/01_schema.sql
+sudo mariadb < sql/02_seed.sql
+sudo mariadb < sql/03_views.sql
+sudo mariadb < sql/04_routines.sql
+sudo mariadb < sql/05_users.sql      # requiere GRANT OPTION: root@localhost
+sudo mariadb < sql/06_verify.sql     # opcional
 ```
 
-El cliente `mysql` interpreta `DELIMITER` de forma nativa. También sirve `mariadb`.
+El cliente `mariadb` interpreta `DELIMITER` de forma nativa. También sirve `mysql`.
+
+> **Error 1142 (`GRANT command denied`)** al ejecutar `05_users.sql` desde DBeaver:
+> el `root` remoto no tiene `GRANT OPTION`. No es un error del script.
+> Solución: ejecutarlo en la VM con `sudo mariadb < sql/05_users.sql`.
+> No otorgues `GRANT OPTION` al root remoto.
 
 ### Opción B — DBeaver desde Windows
 
@@ -230,10 +237,11 @@ La base **no se pudo ejecutar contra un servidor MariaDB real** en la máquina d
 | Tema | Detalle |
 |---|---|
 | **Error 1442** | No insertar detalles con `INSERT ... SELECT` sobre `productos`; usar `VALUES` o `sp_registrar_pedido` |
+| **Error 1142** (`GRANT command denied`) | El `root` remoto (DBeaver) no tiene `GRANT OPTION`; no es un fallo del script | Ejecutar `05_users.sql` en la VM con `sudo mariadb < sql/05_users.sql` |
 | **DELIMITER** | `04_routines.sql` debe ejecutarse como script completo |
 | **Host de `web_skincare`** | Es `@'localhost'`; no crear `@'%'` "para que funcione" |
 | **`bind-address`** | Solo necesario para NetBeans/DBeaver desde Windows |
-| **Puerto 3306** | `ufw allow from 192.168.56.0/24 to any port 3306`, no abierto a Internet |
+| **Puerto 3306** | `ufw allow from 192.168.1.0/24 to any port 3306`, no abierto a Internet |
 | **Imágenes** | `producto_imagenes.url` apunta a `/img/productos/<SKU>-1.webp`; hay que copiar las fotos a `public/img/productos/` en Next.js |
 | **Caché ISR** | Si el stock cambia desde NetBeans, la web puede tardar hasta `revalidate` segundos |
 | **Zona horaria** | Guardar en UTC; mostrar en la app |

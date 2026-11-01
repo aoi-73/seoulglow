@@ -23,14 +23,16 @@ una misma base MariaDB:
 ## Puesta en marcha
 
 ```bash
-mysql -u root -p < sql/01_schema.sql
-mysql -u root -p < sql/02_seed.sql
-mysql -u root -p < sql/03_views.sql
-mysql -u root -p < sql/04_routines.sql
-mysql -u root -p < sql/05_users.sql
+sudo mariadb < sql/01_schema.sql
+sudo mariadb < sql/02_seed.sql
+sudo mariadb < sql/03_views.sql
+sudo mariadb < sql/04_routines.sql
+sudo mariadb < sql/05_users.sql
+sudo mariadb < sql/06_verify.sql   # opcional
 ```
 
-Requiere **MariaDB 10.6+** (se usa `JSON_TABLE`).
+Requiere **MariaDB 10.6+** (se usa `JSON_TABLE`) y ejecutarse **en la VM**:
+`05_users.sql` necesita `GRANT OPTION`, que el `root` remoto normalmente no tiene.
 
 ## Modelo en una imagen
 

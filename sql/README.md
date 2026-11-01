@@ -18,6 +18,15 @@ En DBeaver: abrir cada archivo y usar **Execute SQL Script** (`Alt+X`). No ejecu
 | 3 | `03_views.sql` | Crea `v_catalogo_web`, `v_stock_bajo`, `v_ventas_mensuales` |
 | 4 | `04_routines.sql` | Triggers de stock y procedimientos `sp_registrar_pedido`, `sp_reponer_stock`, `sp_cancelar_pedido`, `sp_recalcular_total_pedido` |
 | 5 | `05_users.sql` | Crea `web_skincare`, `admin_skincare`, `backup_skincare` y sus permisos |
+| 6 | `06_verify.sql` | (Opcional) Conteos, objetos creados y comprobaciones de integridad |
+
+> **`05_users.sql` necesita `GRANT OPTION`.** El `root` remoto (el que se conecta desde DBeaver) normalmente **no** la tiene. Si ves `SQL Error [1142] GRANT command denied`, ejecutá ese script en la VM:
+>
+> ```bash
+> sudo mariadb < sql/05_users.sql
+> ```
+>
+> No le des más permisos al root remoto: el diseño es que la administración de usuarios se haga desde la propia máquina.
 
 > `01_schema.sql` es idempotente: si lo volvés a ejecutar, **borra** las tablas y vistas de `seoulglow_db`. No borra los usuarios.
 
@@ -43,7 +52,7 @@ pbkdf2_sha256$<iteraciones>$<salt_base64>$<hash_base64>
 | Usuario | Host | Contraseña | Permisos |
 |---|---|---|---|
 | `web_skincare` | `localhost` | `WebSkincare2026!` | `SELECT` sobre la vista y las tablas del catálogo |
-| `admin_skincare` | `192.168.56.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
+| `admin_skincare` | `192.168.1.%` | `AdminSkincare2026!` | `SELECT, INSERT, UPDATE, DELETE, EXECUTE` sobre `seoulglow_db.*` |
 | `backup_skincare` | `localhost` | `BackupSkincare2026!` | Lectura + bloqueo para `mysqldump` |
 
 > Si tu VM usa otra red (VMware, bridged), editá el host en `05_users.sql` antes de ejecutarlo.
@@ -127,9 +136,9 @@ public static boolean verificar(String password, String almacenado) throws Excep
 
 ## Notas de conexión
 
-- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.56.10:3306/seoulglow_db` con `admin_skincare`.
+- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.1.10:3306/seoulglow_db` con `admin_skincare`.
 - Desde Next.js en la VM: `127.0.0.1:3306` con `web_skincare`.
-- Requiere en Ubuntu: `bind-address = 0.0.0.0` y `ufw allow from 192.168.56.0/24 to any port 3306` (solo por la app de escritorio).
+- Requiere en Ubuntu: `bind-address = 0.0.0.0` y `ufw allow from 192.168.1.0/24 to any port 3306` (solo por la app de escritorio).
 
 ## Reglas que la base ya hace cumplir
 

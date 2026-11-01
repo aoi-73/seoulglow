@@ -347,9 +347,9 @@ GRANT SELECT ON seoulglow_db.producto_ingredientes TO 'web_skincare'@'localhost'
 GRANT SELECT ON seoulglow_db.ingredientes TO 'web_skincare'@'localhost';
 
 -- 2) App de escritorio / DBeaver: CRUD completo sobre la base
-CREATE USER 'admin_skincare'@'192.168.56.%' IDENTIFIED BY 'AdminSkincare2026!';
+CREATE USER 'admin_skincare'@'192.168.1.%' IDENTIFIED BY 'AdminSkincare2026!';
 GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE
-  ON seoulglow_db.* TO 'admin_skincare'@'192.168.56.%';
+  ON seoulglow_db.* TO 'admin_skincare'@'192.168.1.%';
 
 -- 3) Respaldo (opcional)
 CREATE USER 'backup_skincare'@'localhost' IDENTIFIED BY 'BackupSkincare2026!';
@@ -368,7 +368,7 @@ FLUSH PRIVILEGES;
    ```
 3. **Firewall** — solo la red del laboratorio:
    ```bash
-   sudo ufw allow from 192.168.56.0/24 to any port 3306 proto tcp
+   sudo ufw allow from 192.168.1.0/24 to any port 3306 proto tcp
    ```
 4. **Reiniciar y verificar:**
    ```bash
@@ -377,7 +377,7 @@ FLUSH PRIVILEGES;
    ```
 5. **Prueba desde Windows (PowerShell):**
    ```powershell
-   Test-NetConnection 192.168.56.10 -Port 3306
+   Test-NetConnection 192.168.1.10 -Port 3306
    ```
 6. **DBeaver:** conexión ya creada → solo cambiar usuario a `admin_skincare` y marcar *"Allow public key retrieval"* si aparece el error de autenticación.
 
@@ -385,14 +385,14 @@ FLUSH PRIVILEGES;
 
 | Parámetro | Valor |
 |---|---|
-| Host (desde Windows) | IP de la VM Ubuntu (ej. `192.168.56.10`) |
+| Host (desde Windows) | IP de la VM Ubuntu (ej. `192.168.1.10`) |
 | Host (desde la web en la VM) | `127.0.0.1` |
 | Puerto | `3306` |
 | Base de datos | `seoulglow_db` |
 | Usuario app | `admin_skincare` |
 | Usuario web | `web_skincare` |
 | Driver Java | MariaDB Connector/J (`org.mariadb.jdbc.Driver`) |
-| URL JDBC | `jdbc:mariadb://192.168.56.10:3306/seoulglow_db` |
+| URL JDBC | `jdbc:mariadb://192.168.1.10:3306/seoulglow_db` |
 | Next.js (`mysql2`) | `{ host: '127.0.0.1', database: 'seoulglow_db', user: 'web_skincare' }` |
 
 > Guardar credenciales fuera del código: `.env.local` con permisos `600` en Ubuntu y un `db.properties` en el proyecto Java.
@@ -585,4 +585,4 @@ GROUP BY p.id_producto;
 2. **Nombre definitivo** de la base y de la marca (por defecto `seoulglow_db` / *Seoul Glow*).
 3. **¿La web tendrá carrito y pedidos?** Si sí, se agrega sesión de carrito y `sp_registrar_pedido` pasa a ser obligatorio.
 4. **Idioma de la interfaz:** español (por defecto).
-5. **Rango de IP de la VM:** confirmar `192.168.56.0/24` (Host-only de VirtualBox) o la red real.
+5. **Rango de IP:** confirmado `192.168.1.0/24` (red del laboratorio; el cliente Windows es `192.168.1.71`).
