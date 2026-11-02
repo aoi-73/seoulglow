@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { notFound } from "next/navigation";
 import { ProductVisual } from "@/components/ProductVisual";
 import {
@@ -9,6 +11,7 @@ import {
   tipoPielLista,
 } from "@/lib/format";
 import { getProductoPorSlug } from "@/lib/queries";
+import { rutaImagen } from "@/lib/imagenes";
 
 export const revalidate = 60;
 
@@ -24,13 +27,21 @@ export async function generateMetadata({
 
   if (!producto) return { title: "Producto no encontrado" };
 
+  const imagen = rutaImagen(producto);
+  // Solo anunciar la imagen si realmente se puede servir: BLOB o archivo local.
+  const imagenDisponible = Boolean(
+    imagen &&
+      (imagen.startsWith("/api/imagenes/") ||
+        existsSync(join(process.cwd(), "public", imagen))),
+  );
+
   return {
     title: `${producto.nombre} — ${producto.marca}`,
     description:
       producto.descripcion_corta ??
       `Descubre ${producto.nombre} de ${producto.marca} en Seoul Glow.`,
     openGraph: {
-      images: producto.imagen_principal ? [producto.imagen_principal] : [],
+      images: imagenDisponible && imagen ? [imagen] : [],
     },
   };
 }
@@ -73,7 +84,7 @@ export default async function ProductoPage({ params }: { params: Params }) {
         {/* Visual */}
         <div className="group relative aspect-[4/5] overflow-hidden border border-line bg-paper-deep">
           <ProductVisual
-            src={producto.imagen_principal}
+            src={rutaImagen(producto)}
             alt={producto.nombre}
             marca={producto.marca}
             categoria={producto.categoria}

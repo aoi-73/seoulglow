@@ -3,11 +3,11 @@ import { join } from "node:path";
 import Image from "next/image";
 
 /**
- * Si la imagen existe en `public/`, se muestra. Si todavía no se copiaron
- * las fotos, se usa un panel tipográfico con el color de la categoría.
+ * Si la fila tiene BLOB, la imagen se sirve desde `/api/imagenes/<id>`.
+ * Si solo hay una ruta local en `public/`, se usa esa. Si no hay ninguna,
+ * se muestra un panel tipográfico con el color de la categoría.
  *
- * Así la web se ve completa desde el primer día y las fotos aparecen solas
- * cuando se agregan a `public/img/productos/`.
+ * Así la web se ve completa aunque todavía no se haya subido ninguna foto.
  */
 
 const TINTE: Record<string, string> = {
@@ -44,7 +44,11 @@ export function ProductVisual({
   sizes,
   priority = false,
 }: Props) {
-  const existe = Boolean(src && existsSync(join(process.cwd(), "public", src)));
+  // Las rutas /api/imagenes/* vienen de un BLOB: no existen en public/.
+  const desdeBase = Boolean(src?.startsWith("/api/imagenes/"));
+  const existe = Boolean(
+    src && (desdeBase || existsSync(join(process.cwd(), "public", src))),
+  );
 
   if (existe && src) {
     return (
@@ -54,6 +58,8 @@ export function ProductVisual({
         fill
         sizes={sizes}
         priority={priority}
+        // El BLOB ya está comprimido y el endpoint controla su propio caché.
+        unoptimized={desdeBase}
         className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
       />
     );

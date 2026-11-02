@@ -8,11 +8,11 @@
 > **Estado (1/11/2026):** la base `seoulglow_db` **ya está cargada y verificada** en la VM
 > (MariaDB 11.8.6). La web solo necesita conectarse con `web_skincare@localhost`.
 > Desde Windows, la app de escritorio debe usar **`admin_skincare`** (nunca `root`):
-> `jdbc:mariadb://192.168.1.157:3306/seoulglow_db`. Detalles en `CONTEXTO_UBUNTU.md` §4.4.
+> `jdbc:mariadb://192.168.1.232:3306/seoulglow_db`. Detalles en `CONTEXTO_UBUNTU.md` §4.4.
 
 > **Implementación actual:** el código de la web vive en `web/` del repositorio (no en
 > `/var/www`), corre como servicio `seoulglow.service` con el usuario `andreleon` y Apache
-> lo publica en `http://192.168.1.157/`. Este plan sigue siendo la referencia de diseño;
+> lo publica en `http://192.168.1.232/`. Este plan sigue siendo la referencia de diseño;
 > los comandos concretos de operación están en `CONTEXTO_UBUNTU.md` §8.1.
 
 ---
@@ -219,7 +219,7 @@ DB_PORT=3306
 DB_NAME=seoulglow_db
 DB_USER=web_skincare
 DB_PASSWORD=WebSkincare2026!
-NEXT_PUBLIC_SITE_URL=http://192.168.1.157
+NEXT_PUBLIC_SITE_URL=http://192.168.1.232
 ```
 
 `.env.example` (sí se sube):
@@ -275,8 +275,21 @@ export default async function ProductoPage({ params }: { params: Promise<{ slug:
 
 ### 4.3 Imágenes
 
-- **Recomendado:** guardar las fotos en `public/img/productos/` y que `producto_imagenes.url` guarde `/img/productos/cosrx-snail-96.webp`. Cero configuración y cero dependencia externa (importante si la VM no tiene internet en la exposición).
-- Si usan URLs externas, declararlas en `next.config.ts`:
+**Implementado (opción elegida):** la foto viaja y se guarda en la base.
+
+- La app de escritorio (Java/JDBC) escribe los bytes en
+  `producto_imagenes.imagen` (`MEDIUMBLOB`) con su `mime_type`.
+- La web la sirve con `app/api/imagenes/[id]/route.ts`:
+  `Content-Type` desde `mime_type`, caché inmutable y `?v=<actualizado_en>`
+  para invalidar cuando cambia la foto.
+- `lib/imagenes.ts` decide la fuente: BLOB → `url` local → panel tipográfico.
+- Guía de la parte Java: [`GUIA_IMAGENES_JAVA.md`](GUIA_IMAGENES_JAVA.md).
+
+Alternativa de respaldo (sigue soportada): copiar las fotos a
+`public/img/productos/` y guardar la ruta en `producto_imagenes.url`. Si una fila
+tiene BLOB, el BLOB gana.
+
+Si en el futuro usan URLs externas, declararlas en `next.config.ts`:
 
 ```ts
 const nextConfig = {
@@ -315,7 +328,7 @@ sudo systemctl restart apache2
 ```apache
 <VirtualHost *:80>
     ServerName seoulglow.local
-    ServerAlias 192.168.1.157
+    ServerAlias 192.168.1.232
 
     ProxyPreserveHost On
     ProxyRequests Off
@@ -554,7 +567,7 @@ WHERE p.activo = 1 AND m.activa = 1 AND c.activa = 1;
 | Escenario | Cómo | Ventaja / riesgo |
 |---|---|---|
 | **A. Desarrollar en Ubuntu** (recomendado) | VS Code con *Remote SSH* o editar por SSH | Mismo entorno que producción; sin sorpresas de rutas ni mayúsculas |
-| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.1.157`, usuario `admin_skincare` o un `web_dev@192.168.1.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
+| B. Desarrollar en Windows | `next dev` local, `DB_HOST=192.168.1.232`, usuario `admin_skincare` o un `web_dev@192.168.1.%` | Cómodo, pero hay que crear un usuario extra y el build final se hace igual en Ubuntu |
 | C. Solo copiar archivos | Editar en Windows y subir con `scp`/FileZilla | Funciona, pero se pierde el HMR |
 
 > **Ojo con Linux:** las rutas distinguen mayúsculas. `ProductoCard.tsx` importado como `productocard` funciona en Windows y falla en Ubuntu. Es el error clásico del día anterior a la entrega.
@@ -578,11 +591,11 @@ sudo systemctl is-enabled seoulglow && sudo systemctl restart seoulglow
 sleep 3 && curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
 
 # 4. ¿Apache hace el proxy?
-curl -I http://192.168.1.157/
+curl -I http://192.168.1.232/
 sudo tail -f /var/log/apache2/seoulglow_error.log
 
 # 5. ¿Responde desde Windows?
-# PowerShell: Invoke-WebRequest http://192.168.1.157/ -UseBasicParsing | Select StatusCode
+# PowerShell: Invoke-WebRequest http://192.168.1.232/ -UseBasicParsing | Select StatusCode
 ```
 
 ### 10.2 Definition of Done (punto 4 del caso)

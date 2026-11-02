@@ -19,6 +19,7 @@ En DBeaver: abrir cada archivo y usar **Execute SQL Script** (`Alt+X`). No ejecu
 | 4 | `04_routines.sql` | Triggers de stock y procedimientos `sp_registrar_pedido`, `sp_reponer_stock`, `sp_cancelar_pedido`, `sp_recalcular_total_pedido` |
 | 5 | `05_users.sql` | Crea `web_skincare`, `admin_skincare`, `backup_skincare` y sus permisos |
 | 6 | `06_verify.sql` | (Opcional) Conteos, objetos creados y comprobaciones de integridad |
+| 7 | `07_imagenes_blob.sql` | Agrega `imagen`, `mime_type` y `actualizado_en` a `producto_imagenes` y actualiza `v_catalogo_web` (necesario en bases ya creadas; `01` y `03` ya lo incluyen para instalaciones nuevas) |
 
 > **`05_users.sql` necesita `GRANT OPTION`.** El `root` remoto (el que se conecta desde DBeaver) normalmente **no** la tiene. El script comprueba ese permiso antes de crear nada y, si falta, aborta con `Falta GRANT OPTION: ejecuta en la VM -> sudo mariadb < sql/05_users.sql` (antes se cortaba en el primer `GRANT` y dejaba usuarios sin permisos). Solución:
 >
@@ -136,7 +137,7 @@ public static boolean verificar(String password, String almacenado) throws Excep
 
 ## Notas de conexión
 
-- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` con **`admin_skincare`** (nunca `root`).
+- Desde Windows (NetBeans / DBeaver): `jdbc:mariadb://192.168.1.232:3306/seoulglow_db` con **`admin_skincare`** (nunca `root`).
 - Desde Next.js en la VM: `127.0.0.1:3306` con `web_skincare`.
 - Requiere en Ubuntu: `bind-address = 0.0.0.0` y el puerto 3306 abierto. Desde el 1/11/2026 está **abierto a cualquier origen** (`sudo ufw allow 3306/tcp`) por decisión de la demo; el acceso lo limita `admin_skincare@'192.168.1.%'`.
 

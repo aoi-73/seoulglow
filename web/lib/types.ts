@@ -25,6 +25,9 @@ export type Producto = {
   tipo_piel: string | null;
   destacado: number;
   imagen_principal: string | null;
+  id_imagen_principal: number | null;
+  tiene_imagen: number;
+  imagen_version: number | null;
 };
 
 export type Categoria = {

@@ -152,10 +152,14 @@ erDiagram
 |---|---|---|---|---|
 | `id_imagen` | BIGINT UNSIGNED PK AI | No | — | — |
 | `id_producto` | BIGINT UNSIGNED FK | No | — | `ON DELETE CASCADE` |
-| `url` | VARCHAR(500) | No | — | Ruta relativa o URL |
+| `url` | VARCHAR(500) | Sí | NULL | Ruta local o URL (opcional si hay BLOB) |
+| `imagen` | MEDIUMBLOB | Sí | NULL | Bytes de la foto (la sube la app Java por JDBC) |
+| `mime_type` | VARCHAR(80) | Sí | NULL | `image/webp`, `image/jpeg`, `image/png`… |
 | `alt_text` | VARCHAR(150) | Sí | NULL | Accesibilidad/SEO |
 | `orden` | TINYINT UNSIGNED | No | 0 | Orden en la galería |
 | `es_principal` | TINYINT(1) | No | 0 | Una por producto (regla en la app) |
+| `created_at` | DATETIME | No | CURRENT_TIMESTAMP | — |
+| `actualizado_en` | DATETIME | No | CURRENT_TIMESTAMP / ON UPDATE | Versión para invalidar la caché de la web |
 
 ### 4.5 `ingredientes`
 
@@ -379,7 +383,7 @@ FLUSH PRIVILEGES;
    ```
 5. **Prueba desde Windows (PowerShell):**
    ```powershell
-   Test-NetConnection 192.168.1.157 -Port 3306
+   Test-NetConnection 192.168.1.232 -Port 3306
    ```
 6. **DBeaver:** conexión ya creada → usuario **`admin_skincare`** (nunca `root`) y marcar *"Allow public key retrieval"* si aparece el error de autenticación.
 
@@ -387,14 +391,14 @@ FLUSH PRIVILEGES;
 
 | Parámetro | Valor |
 |---|---|
-| Host (desde Windows) | `192.168.1.157` (IP de la VM) |
+| Host (desde Windows) | `192.168.1.232` (IP de la VM) |
 | Host (desde la web en la VM) | `127.0.0.1` |
 | Puerto | `3306` |
 | Base de datos | `seoulglow_db` |
 | Usuario app (Windows) | **`admin_skincare`** — el único permitido desde Windows; **nunca `root`** |
 | Usuario web | `web_skincare` |
 | Driver Java | MariaDB Connector/J (`org.mariadb.jdbc.Driver`) |
-| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
+| URL JDBC | `jdbc:mariadb://192.168.1.232:3306/seoulglow_db` |
 | Next.js (`mysql2`) | `{ host: '127.0.0.1', database: 'seoulglow_db', user: 'web_skincare' }` |
 
 > Guardar credenciales fuera del código: `.env.local` con permisos `600` en Ubuntu y un `db.properties` en el proyecto Java.

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Price } from "./Price";
 import { ProductVisual } from "./ProductVisual";
 import { porcentajeDescuento } from "@/lib/format";
+import { rutaImagen } from "@/lib/imagenes";
 import type { Producto } from "@/lib/types";
 
 export function ProductCard({
@@ -21,7 +22,7 @@ export function ProductCard({
     <Link href={`/productos/${producto.slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden border border-line bg-paper-deep">
         <ProductVisual
-          src={producto.imagen_principal}
+          src={rutaImagen(producto)}
           alt={producto.nombre}
           marca={producto.marca}
           categoria={producto.categoria}

@@ -34,7 +34,22 @@ SELECT
        FROM producto_imagenes i
       WHERE i.id_producto = p.id_producto
       ORDER BY i.es_principal DESC, i.orden ASC
-      LIMIT 1) AS imagen_principal
+      LIMIT 1) AS imagen_principal,
+    (SELECT i.id_imagen
+       FROM producto_imagenes i
+      WHERE i.id_producto = p.id_producto
+      ORDER BY i.es_principal DESC, i.orden ASC
+      LIMIT 1) AS id_imagen_principal,
+    (SELECT (i.imagen IS NOT NULL AND OCTET_LENGTH(i.imagen) > 0)
+       FROM producto_imagenes i
+      WHERE i.id_producto = p.id_producto
+      ORDER BY i.es_principal DESC, i.orden ASC
+      LIMIT 1) AS tiene_imagen,
+    (SELECT UNIX_TIMESTAMP(i.actualizado_en)
+       FROM producto_imagenes i
+      WHERE i.id_producto = p.id_producto
+      ORDER BY i.es_principal DESC, i.orden ASC
+      LIMIT 1) AS imagen_version
 FROM productos p
 JOIN marcas m     ON m.id_marca = p.id_marca
 JOIN categorias c ON c.id_categoria = p.id_categoria

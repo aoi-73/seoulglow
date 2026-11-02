@@ -17,7 +17,7 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
 | MariaDB | Ubuntu | ✅ instalado |
 | Base de datos `seoulglow_db` | Ubuntu | ✅ cargada y verificada (01→06 ejecutados) |
 | Servidor web Apache | Ubuntu | ✅ instalado |
-| Página web **Next.js** + Apache como proxy | Ubuntu | ✅ básica publicada en `http://192.168.1.157/` |
+| Página web **Next.js** + Apache como proxy | Ubuntu | ✅ básica publicada en `http://192.168.1.232/` |
 | App de escritorio **Apache NetBeans** (Java + JDBC) | Windows | ⬜ pendiente |
 | DBeaver | Windows | ✅ conexión creada |
 
@@ -67,7 +67,7 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
 | `categorias` | 9 principales + 3 subcategorías (auto-referencia `id_padre`) |
 | `marcas` | 10 marcas coreanas |
 | `productos` | Catálogo: SKU, slug, precio, oferta, stock, `tipo_piel` (SET), `destacado` |
-| `producto_imagenes` | 2 imágenes por producto |
+| `producto_imagenes` | 2 imágenes por producto; la foto puede estar en `url` o dentro de la base (`imagen MEDIUMBLOB` + `mime_type`) |
 | `ingredientes` | 14 activos (centella, niacinamida, mucina de caracol…) |
 | `producto_ingredientes` | Puente N:M con `porcentaje` y `es_clave` |
 | `clientes` | 15 clientes |
@@ -95,7 +95,7 @@ Caso académico: *página web para una empresa utilizando Ubuntu 26 como servido
 
 | Vista | Uso |
 |---|---|
-| `v_catalogo_web` | Catálogo que consume Next.js. Incluye `id_marca`, `id_categoria`, `precio_efectivo`, `imagen_principal` |
+| `v_catalogo_web` | Catálogo que consume Next.js. Incluye `id_marca`, `id_categoria`, `precio_efectivo`, `imagen_principal`, `id_imagen_principal`, `tiene_imagen` e `imagen_version` |
 | `v_stock_bajo` | Productos con `stock <= stock_minimo` (app de escritorio) |
 | `v_ventas_mensuales` | Ingresos y ticket promedio por mes |
 
@@ -165,29 +165,29 @@ Si la IP del cliente Windows no está en `192.168.1.0/24`, ajustar `05_users.sql
 | Cliente | Cadena |
 |---|---|
 | Next.js (`mysql2`) | `{ host: '127.0.0.1', port: 3306, database: 'seoulglow_db', user: 'web_skincare' }` |
-| JDBC (NetBeans) | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` con `admin_skincare` |
+| JDBC (NetBeans) | `jdbc:mariadb://192.168.1.232:3306/seoulglow_db` con `admin_skincare` |
 | DBeaver | misma URL JDBC |
 
 ### 4.4 Acceso desde Windows (agente de la app `.exe` / NetBeans)
 
 Datos exactos para conectarse desde la máquina Windows (probado el 1/11/2026 desde
-`192.168.1.71` contra la VM `192.168.1.157`):
+`192.168.1.71` contra la VM `192.168.1.232`):
 
 | Dato | Valor |
 |---|---|
-| Host / IP de la VM | `192.168.1.157` |
+| Host / IP de la VM | `192.168.1.232` |
 | Puerto | `3306` |
 | Base de datos | `seoulglow_db` |
 | Usuario | **`admin_skincare`** (no `root`, no `web_skincare`) |
 | Contraseña | `AdminSkincare2026!` |
-| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
+| URL JDBC | `jdbc:mariadb://192.168.1.232:3306/seoulglow_db` |
 | Driver | `org.mariadb.jdbc.Driver` (`mariadb-java-client`) |
 
 Prueba rápida antes de escribir código Java:
 
 ```bash
 # Desde Windows (PowerShell), si hay cliente MariaDB/MySQL instalado:
-mariadb -h 192.168.1.157 -P 3306 -u admin_skincare -p seoulglow_db -e "SELECT COUNT(*) FROM productos;"
+mariadb -h 192.168.1.232 -P 3306 -u admin_skincare -p seoulglow_db -e "SELECT COUNT(*) FROM productos;"
 # Debe devolver 32
 ```
 
@@ -202,6 +202,18 @@ Notas para ese agente:
   administran solo en la VM.
 - `subtotal_linea` en `pedido_detalles` es columna generada: no se inserta ni se actualiza.
 - Para anular un pedido usar `CALL sp_cancelar_pedido(id, id_usuario)`, no `DELETE`.
+
+### 4.5 Imágenes desde la app Java (BLOB)
+
+La app de escritorio puede subir y reemplazar fotos **por JDBC**, sin SMB ni
+servidor de archivos: el binario se guarda en `producto_imagenes.imagen`
+(`MEDIUMBLOB`) y la web lo publica en `/api/imagenes/<id_imagen>`.
+
+- Guía completa con el código Java: [`GUIA_IMAGENES_JAVA.md`](GUIA_IMAGENES_JAVA.md).
+- Migración aplicada: `sql/07_imagenes_blob.sql`.
+- La app debe usar **`admin_skincare`** (no `web_skincare`, que es solo lectura).
+- Después de guardar, el catálogo y la ficha muestran la foto de inmediato; la
+  home en ≤ 60 s (ISR).
 
 ---
 
@@ -306,14 +318,14 @@ La base **ya está cargada en el MariaDB 11.8.6 de la VM** (Ubuntu 26) y validad
    - Filtros por categoría, marca y `tipo_piel`.
 5. ~~Apache como reverse proxy~~ → ✅ `seoulglow.conf` con `mod_proxy_http` y `ProxyPreserveHost`.
 6. ~~Servicio `systemd`~~ → ✅ `seoulglow.service` habilitado y activo.
-7. ~~Probar desde Windows~~ → ✅ responde en `http://192.168.1.157/` (ver §8.1).
+7. ~~Probar desde Windows~~ → ✅ responde en `http://192.168.1.232/` (ver §8.1).
 8. No commitear `.env.local` ni credenciales nuevas.
 
 ### 8.1 Web ya publicada (1/11/2026)
 
 | Dato | Valor |
 |---|---|
-| URL | `http://192.168.1.157/` |
+| URL | `http://192.168.1.232/` |
 | Código | `web/` (Next.js 16 + Tailwind 4 + `mysql2`) |
 | Servicio | `seoulglow.service` (systemd, usuario `andreleon`) |
 | Proxy | `/etc/apache2/sites-available/seoulglow.conf` → `127.0.0.1:3000` |
@@ -327,6 +339,7 @@ Rutas implementadas:
 | `/` | Hero, marcas, 4 destacados y categorías con conteo |
 | `/productos` | Catálogo completo con filtros `?cat=&piel=&marca=&q=` |
 | `/productos/[slug]` | Ficha: precio, stock, tipo de piel e ingredientes clave |
+| `/api/imagenes/[id]` | Binario de la foto guardada en MariaDB (BLOB) |
 
 Comandos útiles:
 
@@ -336,10 +349,28 @@ journalctl -u seoulglow -f
 cd ~/Documentos/seoulglow/web && npm run build && sudo systemctl restart seoulglow
 ```
 
-**Imágenes:** `producto_imagenes.url` apunta a `/img/productos/<SKU>-1.webp`.
-Mientras no existan, cada tarjeta muestra un panel tipográfico con el color de su
-categoría. Al copiar las fotos a `web/public/img/productos/` aparecen solas
-(reconstruir o esperar el `revalidate`).
+**Imágenes:** hay dos fuentes, en este orden:
+
+1. `producto_imagenes.imagen` (BLOB) → `/api/imagenes/<id_imagen>?v=<actualizado_en>`.
+   Es lo que escribe la app Java; ver [`GUIA_IMAGENES_JAVA.md`](GUIA_IMAGENES_JAVA.md).
+2. `producto_imagenes.url` → archivo local en `web/public/img/productos/`
+   (compatibilidad; hoy la carpeta solo tiene `.gitkeep`).
+
+Si no hay ninguna, la tarjeta muestra un panel tipográfico con el color de su
+categoría. Al subir la foto desde Java aparece sola: el catálogo y la ficha al
+instante, la home en ≤ 60 s (`revalidate`).
+
+**IP estática:** `192.168.1.232/24`, gateway `192.168.1.1`, configurada en
+`/etc/netplan/00-installer-config.yaml` (renderer NetworkManager, `dhcp4: false`).
+Backup de la configuración anterior: `/root/netplan-backup-20261101/`.
+Si el router reparte DHCP dentro de ese rango, conviene reservar la IP en el
+router o moverla fuera del pool para evitar conflictos.
+
+```bash
+sudo netplan apply          # reaplicar sin reiniciar
+ip -4 addr show ens33       # debe mostrar 192.168.1.232/24
+ip route | grep default     # default via 192.168.1.1
+```
 
 ---
 

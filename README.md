@@ -16,6 +16,7 @@ una misma base MariaDB:
 | Documento | Contenido |
 |---|---|
 | [`CONTEXTO_UBUNTU.md`](CONTEXTO_UBUNTU.md) | **Empezar aquí**: estado, credenciales, validaciones y próximos pasos |
+| [`GUIA_IMAGENES_JAVA.md`](GUIA_IMAGENES_JAVA.md) | Subir y reemplazar fotos desde la app Java con JDBC (BLOB en MariaDB) |
 | [`PLAN_BASE_DATOS.md`](PLAN_BASE_DATOS.md) | Modelo ER, diccionario de datos, integridad y permisos |
 | [`PLAN_WEB_NEXTJS.md`](PLAN_WEB_NEXTJS.md) | Arquitectura Next.js, Apache proxy, systemd y despliegue |
 | [`sql/README.md`](sql/README.md) | Orden de ejecución, pruebas y errores frecuentes |
@@ -40,7 +41,7 @@ La base ya está cargada. Desde Windows **no** se ejecutan los scripts: solo se 
 
 | Dato | Valor |
 |---|---|
-| URL JDBC | `jdbc:mariadb://192.168.1.157:3306/seoulglow_db` |
+| URL JDBC | `jdbc:mariadb://192.168.1.232:3306/seoulglow_db` |
 | Usuario | **`admin_skincare`** (nunca `root`) |
 | Contraseña | `AdminSkincare2026!` |
 | Driver | `org.mariadb.jdbc.Driver` (`mariadb-java-client`) |
@@ -49,13 +50,14 @@ Detalles y notas para el agente de la app `.exe`: ver **§4.4** en [`CONTEXTO_UB
 
 ## Web (Next.js + Apache)
 
-Publicada en **`http://192.168.1.157/`** (Apache → `127.0.0.1:3000`).
+Publicada en **`http://192.168.1.232/`** (Apache → `127.0.0.1:3000`).
 
 | Ruta | Contenido |
 |---|---|
 | `/` | Home: destacados, marcas y categorías |
 | `/productos` | Catálogo con filtros por categoría, tipo de piel, marca y búsqueda |
 | `/productos/<slug>` | Ficha del producto e ingredientes clave |
+| `/api/imagenes/<id>` | Foto guardada en MariaDB (BLOB) |
 
 ```bash
 cd web
@@ -68,6 +70,12 @@ journalctl -u seoulglow -f
 
 Detalles de despliegue en [`CONTEXTO_UBUNTU.md` §8.1](CONTEXTO_UBUNTU.md) y
 [`PLAN_WEB_NEXTJS.md`](PLAN_WEB_NEXTJS.md).
+
+### Imágenes
+
+La app Java guarda la foto en `producto_imagenes.imagen` (`MEDIUMBLOB`) y la web
+la sirve en `/api/imagenes/<id_imagen>`. No hace falta SMB ni un servidor de
+archivos. Ver [`GUIA_IMAGENES_JAVA.md`](GUIA_IMAGENES_JAVA.md).
 
 ## Modelo en una imagen
 

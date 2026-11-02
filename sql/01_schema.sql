@@ -140,11 +140,17 @@ CREATE TABLE productos (
 CREATE TABLE producto_imagenes (
   id_imagen   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_producto BIGINT UNSIGNED NOT NULL,
-  url         VARCHAR(500) NOT NULL,
+  -- La imagen puede estar en disco (url) o dentro de la base (imagen).
+  -- Si tiene ambas, la web prefiere el BLOB.
+  url         VARCHAR(500) NULL,
+  imagen      MEDIUMBLOB   NULL,
+  mime_type   VARCHAR(80)  NULL,
   alt_text    VARCHAR(150) NULL,
   orden       TINYINT UNSIGNED NOT NULL DEFAULT 0,
   es_principal TINYINT(1)  NOT NULL DEFAULT 0,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id_imagen),
   KEY idx_imagenes_producto (id_producto, es_principal, orden),
   CONSTRAINT fk_imagenes_producto

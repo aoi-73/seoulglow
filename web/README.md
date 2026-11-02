@@ -32,15 +32,19 @@ La configuración de Apache y `systemd` está en
 ## Datos
 
 - Usuario de MariaDB: `web_skincare@localhost` (solo `SELECT`).
-- Si una imagen no existe en `public/img/productos/`, la tarjeta muestra un
-  panel tipográfico con el color de la categoría. Al copiar las fotos con el
-  nombre que indica `producto_imagenes.url`, aparecen automáticamente.
+- La foto principal sale, en este orden, de:
+  1. `producto_imagenes.imagen` (BLOB) → `/api/imagenes/<id>?v=<actualizado_en>`.
+  2. `producto_imagenes.url` → archivo en `public/img/productos/`.
+  3. Panel tipográfico con el color de la categoría.
+- Las fotos las sube la app Java (JDBC). Ver
+  [`../GUIA_IMAGENES_JAVA.md`](../GUIA_IMAGENES_JAVA.md).
 
 ## Estructura
 
 ```
-app/                 páginas (home, catálogo, ficha)
-components/          tarjetas, header, footer, filtros
-lib/                 pool, consultas, tipos y formato
-public/img/productos/  fotos locales (opcional)
+app/                    páginas (home, catálogo, ficha)
+app/api/imagenes/[id]/  endpoint que sirve el BLOB
+components/             tarjetas, header, footer, filtros
+lib/                    pool, consultas, tipos, formato e imágenes
+public/img/productos/   fotos locales (alternativa al BLOB)
 ```
